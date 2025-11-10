@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create API Key</title>
+    <title>Create & Validate API Key</title>
     <style>
         /* --- 1. Pengaturan Global & Latar Belakang (BIRU-HIJAU) --- */
         body, html {
@@ -37,6 +37,14 @@
             margin-bottom: 0.5rem;
         }
 
+        /* --- BARU: Style untuk H2 --- */
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 0.5rem;
+            color: #B2DFDB;
+        }
+
         .subtitle {
             font-size: 0.9rem;
             color: #B2DFDB; /* Warna hijau muda untuk subjudul */
@@ -58,7 +66,6 @@
             transition: background-color 0.3s ease;
         }
         
-        /* Menambahkan style untuk status "loading" */
         .generate-btn:disabled {
             background-color: #004D40;
             cursor: wait;
@@ -67,6 +74,31 @@
         .generate-btn:hover {
             background-color: #00A39A;
         }
+
+        /* --- BARU: Style Tombol Validasi --- */
+        .validate-btn {
+            background-color: #0277BD; /* Warna Biru */
+            color: #FFFFFF;
+            font-weight: bold;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .validate-btn:disabled {
+            background-color: #004D40;
+            cursor: wait;
+        }
+
+        .validate-btn:hover {
+            background-color: #039BE5;
+        }
+
 
         /* --- 4. Kotak Teks API Key & Tombol Salin (BIRU-HIJAU) --- */
         .key-container {
@@ -83,11 +115,14 @@
             font-size: 0.9rem;
             border-radius: 8px;
             padding: 1rem;
-            padding-right: 70px;
             box-sizing: border-box;
         }
         
-        /* Menambahkan style untuk pesan error di input */
+        /* Modifikasi padding-right untuk input yang ADA tombol salin */
+        .api-key-input.with-copy {
+            padding-right: 70px;
+        }
+
         .api-key-input.error {
             color: #FFCDD2;
             border-color: #E57373;
@@ -128,6 +163,28 @@
             opacity: 1;
         }
 
+        /* --- BARU: Style Umpan Balik Validasi --- */
+        .check-feedback {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-top: 1rem;
+            height: 1.2em;
+            visibility: hidden;
+        }
+        
+        .check-feedback.visible {
+            visibility: visible;
+        }
+
+        .check-feedback.valid {
+            color: #81C784; /* Hijau */
+        }
+
+        .check-feedback.invalid {
+            color: #E57373; /* Merah */
+        }
+
+
         .info-text {
             font-size: 0.8rem;
             color: #CFD8DC;
@@ -143,6 +200,14 @@
             color: #BDBDBD;
             text-align: center;
         }
+
+        /* --- BARU: Style Pemisah --- */
+        hr.separator {
+            border: 0;
+            height: 1px;
+            background-color: #004D40;
+            margin: 2.5rem 0;
+        }
     </style>
 </head>
 <body>
@@ -154,13 +219,27 @@
         <button id="generateBtn" class="generate-btn">Buat API Key</button>
 
         <div class="key-container">
-            <input type="text" id="apiKeyInput" class="api-key-input" value="" readonly>
+            <input type="text" id="apiKeyInput" class="api-key-input with-copy" value="" readonly>
             <button id="copyBtn" class="copy-btn">Salin</button>
         </div>
 
         <p id="copyFeedback" class="copy-feedback">sudah di copy di clipboard</p>
 
         <p class="info-text">Kunci dihasilkan secara aman di sisi server. Simpan di tempat aman.</p>
+
+        <hr class="separator">
+
+        <h2>Validasi API Key</h2>
+        <p class="subtitle">Masukkan API key Anda untuk memeriksa validitasnya.</p>
+        
+        <div class="key-container">
+            <input type="text" id="checkKeyInput" class="api-key-input" placeholder="Masukkan API key...">
+        </div>
+        
+        <button id="checkBtn" class="validate-btn">Cek Validitas</button>
+
+        <p id="checkFeedback" class="check-feedback">Hasil cek</p>
+
     </main>
 
     <footer>
@@ -168,39 +247,37 @@
     </footer>
 
     <script>
-        // --- 1. Pilih Elemen ---
+        // --- 1. Pilih Elemen (Lama) ---
         const generateBtn = document.getElementById('generateBtn');
         const copyBtn = document.getElementById('copyBtn');
         const apiKeyInput = document.getElementById('apiKeyInput');
         const copyFeedback = document.getElementById('copyFeedback');
+        
+        // --- BARU: Pilih Elemen (Baru) ---
+        const checkKeyInput = document.getElementById('checkKeyInput');
+        const checkBtn = document.getElementById('checkBtn');
+        const checkFeedback = document.getElementById('checkFeedback');
 
-        /**
-         * PERUBAHAN 2:
-         * Fungsi ini sekarang memanggil server Anda menggunakan fetch()
-         * dengan metode 'POST' ke endpoint '/create'.
-         */
+
+        // --- 2. Fungsi Buat API Key (Tidak berubah) ---
         async function generateApiKey() {
-            // Nonaktifkan tombol untuk mencegah klik ganda
+            // ... (Fungsi ini sama seperti sebelumnya, tidak perlu diubah)
             generateBtn.disabled = true;
             generateBtn.textContent = 'Membuat...';
             apiKeyInput.value = 'Menghubungi server...';
             apiKeyInput.classList.remove('error');
 
             try {
-                // Buat permintaan POST ke server Anda
                 const response = await fetch('/create', {
                     method: 'POST'
                 });
 
-                // Cek jika respons dari server tidak OK (misal: error 500)
                 if (!response.ok) {
                     throw new Error(`Server merespons dengan status: ${response.status}`);
                 }
 
-                // Ambil data JSON dari respons
                 const data = await response.json();
 
-                // Tampilkan API key di kotak input
                 if (data.apiKey) {
                     apiKeyInput.value = data.apiKey;
                 } else {
@@ -208,20 +285,18 @@
                 }
 
             } catch (error) {
-                // Tangani jika ada error jaringan atau error dari server
                 console.error('Gagal mengambil API key:', error);
                 apiKeyInput.value = 'Gagal mengambil key. Coba lagi.';
                 apiKeyInput.classList.add('error');
             } finally {
-                // Apapun yang terjadi, aktifkan kembali tombolnya
                 generateBtn.disabled = false;
                 generateBtn.textContent = 'Buat API Key';
             }
         }
 
-        // --- 3. Fungsi untuk Menyalin ke Clipboard (Tidak berubah) ---
+        // --- 3. Fungsi Salin (Tidak berubah) ---
         function copyToClipboard() {
-            // Jangan salin jika isinya pesan error
+            // ... (Fungsi ini sama seperti sebelumnya, tidak perlu diubah)
             if (apiKeyInput.classList.contains('error') || apiKeyInput.value === '') {
                 return;
             }
@@ -241,15 +316,63 @@
                 });
         }
 
-        // --- 4. Tambahkan Event Listener ke Tombol ---
+        // --- BARU: Fungsi Validasi API Key ---
+        async function validateApiKey() {
+            const keyToCheck = checkKeyInput.value;
+
+            // Jangan lakukan apa-apa jika input kosong
+            if (!keyToCheck) {
+                checkFeedback.textContent = 'Input tidak boleh kosong';
+                checkFeedback.classList.remove('valid');
+                checkFeedback.classList.add('visible', 'invalid');
+                return;
+            }
+
+            // Status Loading
+            checkBtn.disabled = true;
+            checkBtn.textContent = 'Mengecek...';
+            checkFeedback.classList.remove('visible', 'valid', 'invalid');
+
+            try {
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ apiKey: keyToCheck })
+                });
+
+                const data = await response.json();
+
+                // Tampilkan pesan dari server
+                checkFeedback.textContent = data.message || data.error;
+
+                if (response.ok) {
+                    // Status 200 (Valid)
+                    checkFeedback.classList.add('visible', 'valid');
+                } else {
+                    // Status 401 atau 400 (Tidak Valid / Error)
+                    checkFeedback.classList.add('visible', 'invalid');
+                }
+
+            } catch (error) {
+                console.error('Gagal memvalidasi key:', error);
+                checkFeedback.textContent = 'Error jaringan. Coba lagi.';
+                checkFeedback.classList.add('visible', 'invalid');
+            } finally {
+                // Kembalikan tombol ke normal
+                checkBtn.disabled = false;
+                checkBtn.textContent = 'Cek Validitas';
+            }
+        }
+
+        // --- 4. Tambahkan Event Listener (Lama) ---
         generateBtn.addEventListener('click', generateApiKey);
         copyBtn.addEventListener('click', copyToClipboard);
 
-        /**
-         * PERUBAHAN 3:
-         * Baris 'generateApiKey();' dihapus dari sini
-         * agar key tidak otomatis dibuat saat halaman dimuat.
-         */
+        // --- BARU: Tambahkan Event Listener (Baru) ---
+        checkBtn.addEventListener('click', validateApiKey);
+
     </script>
 
 </body>
